@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TransactionDetails } from '@/components/TransactionDetails';
+import { CreateTransactionForm } from '@/components/CreateTransactionForm';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Copy, ChevronUp, ChevronDown, Search, X, ArrowUpDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -112,6 +114,10 @@ export default function TransactionsPage() {
   }, [filteredAndSortedTransactions, currentPage]);
 
   const totalPages = Math.ceil(filteredAndSortedTransactions.length / itemsPerPage);
+
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [selected, setSelected] = useState<Transaction | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
   const showingFrom = filteredAndSortedTransactions.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
   const showingTo = Math.min(currentPage * itemsPerPage, filteredAndSortedTransactions.length);
 
@@ -178,6 +184,11 @@ export default function TransactionsPage() {
         <p className="text-muted-foreground">
           Manage your blockchain transactions
         </p>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div />
+        <Button onClick={() => setCreateOpen(true)}>New Transaction</Button>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
@@ -307,7 +318,14 @@ export default function TransactionsPage() {
               </TableHeader>
               <TableBody>
                 {paginatedTransactions.map((tx) => (
-                  <TableRow key={tx.id} className="cursor-pointer hover:bg-muted/50">
+                  <TableRow
+                    key={tx.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => {
+                      setSelected(tx);
+                      setDetailsOpen(true);
+                    }}
+                  >
                     <TableCell className="text-sm text-muted-foreground">
                       {formatTimestamp(tx.timestamp)}
                     </TableCell>
@@ -427,6 +445,18 @@ export default function TransactionsPage() {
           </div>
         </>
       )}
+
+      <TransactionDetails
+        transaction={selected}
+        open={detailsOpen}
+        onClose={() => setDetailsOpen(false)}
+      />
+
+      <CreateTransactionForm
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onSuccess={fetchTransactions}
+      />
     </div>
   );
 }
