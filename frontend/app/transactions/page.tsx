@@ -13,7 +13,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TransactionDetails } from '@/components/TransactionDetails';
 import { CreateTransactionForm } from '@/components/CreateTransactionForm';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Copy, ChevronUp, ChevronDown, Search, X, ArrowUpDown } from 'lucide-react';
+import { Copy, ChevronUp, ChevronDown, Search, X, ArrowUpDown, Download } from 'lucide-react';
+import { transactionsToCsv, downloadCsv } from '@/lib/csv';
 import { useToast } from '@/hooks/use-toast';
 
 type SortField = 'date' | 'amount' | 'status';
@@ -36,6 +37,7 @@ export default function TransactionsPage() {
   
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
+  const [pollingEnabled, setPollingEnabled] = useState(true);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -62,6 +64,18 @@ export default function TransactionsPage() {
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions]);
+
+  useEffect(() => {
+    if (!pollingEnabled) return;
+    const interval = setInterval(() => {
+      transactionsAPI.getAll().then(res => {
+        setTransactions(res.data.data);
+      }).catch(err => {
+        console.error('Polling error:', err);
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [pollingEnabled]);
 
   const filteredAndSortedTransactions = useMemo(() => {
     let result = [...transactions];
@@ -177,6 +191,16 @@ export default function TransactionsPage() {
       <ChevronDown className="ml-2 h-4 w-4" />;
   };
 
+  const handleExportCsv = () => {
+    const csv = transactionsToCsv(filteredAndSortedTransactions);
+    const now = new Date().toISOString().slice(0, 10);
+    downloadCsv(`transactions-${now}.csv`, csv);
+    toast({
+      title: 'Exported!',
+      description: `${filteredAndSortedTransactions.length} transactions exported to CSV`,
+    });
+  };
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div>
@@ -187,7 +211,10 @@ export default function TransactionsPage() {
       </div>
 
       <div className="flex items-center justify-between">
-        <div />
+        <Button variant="outline" onClick={handleExportCsv} disabled={filteredAndSortedTransactions.length === 0}>
+          <Download className="h-4 w-4 mr-2" />
+          Export CSV
+        </Button>
         <Button onClick={() => setCreateOpen(true)}>New Transaction</Button>
       </div>
 
@@ -456,6 +483,9 @@ export default function TransactionsPage() {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         onSuccess={fetchTransactions}
+        onOptimisticAdd={(tempTx) => {
+          setTransactions(prev => [tempTx, ...prev]);
+        }}
       />
     </div>
   );

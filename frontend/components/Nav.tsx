@@ -3,10 +3,25 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Wallet } from 'lucide-react';
+import { Wallet, Moon, Sun } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { applyTheme, getStoredTheme, initTheme, Theme } from '@/lib/theme';
 
 export function Nav() {
   const pathname = usePathname();
+  const [theme, setTheme] = useState<Theme>('light');
+
+  useEffect(() => {
+    initTheme();
+    const stored = getStoredTheme();
+    if (stored) setTheme(stored);
+  }, []);
+
+  const toggleTheme = () => {
+    const next: Theme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    applyTheme(next);
+  };
 
   return (
     <nav className="border-b bg-card">
@@ -27,6 +42,9 @@ export function Nav() {
               Transactions
             </Button>
           </Link>
+          <Button variant="ghost" onClick={toggleTheme} aria-label="Toggle theme">
+            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
         </div>
       </div>
     </nav>

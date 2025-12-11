@@ -34,9 +34,10 @@ type CreateTransactionFormProps = {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  onOptimisticAdd?: (tempTx: any) => void;
 };
 
-export function CreateTransactionForm({ open, onClose, onSuccess }: CreateTransactionFormProps) {
+export function CreateTransactionForm({ open, onClose, onSuccess, onOptimisticAdd }: CreateTransactionFormProps) {
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
 
@@ -88,6 +89,22 @@ export function CreateTransactionForm({ open, onClose, onSuccess }: CreateTransa
   const onSubmit = async (data: CreateTransactionFormData) => {
     try {
       setSubmitting(true);
+
+      if (onOptimisticAdd) {
+        const tempTx = {
+          id: `temp-${Date.now()}`,
+          hash: '0x...',
+          fromAddress: '0x...',
+          toAddress: data.toAddress,
+          amount: data.amount,
+          status: 'pending' as const,
+          gasLimit: data.gasLimit || '21000',
+          gasPrice: data.gasPrice || '0.00000002',
+          timestamp: new Date().toISOString(),
+        };
+        onOptimisticAdd(tempTx);
+      }
+
       const response = await transactionsAPI.create({
         toAddress: data.toAddress,
         amount: data.amount,
